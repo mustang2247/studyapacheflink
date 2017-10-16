@@ -28,13 +28,13 @@ import org.apache.flink.util.Collector;
 /**
  * Implements the "WordCount" program that computes a simple word occurrence
  * histogram over text files in a streaming fashion.
- *
+ * <p>
  * <p>The input is a plain text file with lines separated by newline characters.
- *
+ * <p>
  * <p>Usage: <code>WordCount --input &lt;path&gt; --output &lt;path&gt;</code><br>
  * If no parameters are provided, the program is run with default data from
  * {@link WordCountData}.
- *
+ * <p>
  * <p>This example shows how to:
  * <ul>
  * <li>write a simple Flink Streaming program,
@@ -44,77 +44,89 @@ import org.apache.flink.util.Collector;
  */
 public class WordCount {
 
-	// *************************************************************************
-	// PROGRAM
-	// *************************************************************************
+    // *************************************************************************
+    // PROGRAM
+    // *************************************************************************
 
-	public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
-		// Checking input parameters
-		final ParameterTool params = ParameterTool.fromArgs(args);
+        // Checking input parameters
+        // 检查输入参数
+        final ParameterTool params = ParameterTool.fromArgs(args);
 
-		// set up the execution environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // set up the execution environment
+        // 设置执行环境
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		// make parameters available in the web interface
-		env.getConfig().setGlobalJobParameters(params);
+        // make parameters available in the web interface
+        // 使参数在Web界面中可用
+        env.getConfig().setGlobalJobParameters(params);
 
-		// get input data
-		DataStream<String> text;
-		if (params.has("input")) {
-			// read the text file from given input path
-			text = env.readTextFile(params.get("input"));
-		} else {
-			System.out.println("Executing WordCount example with default input data set.");
-			System.out.println("Use --input to specify file input.");
-			// get default test text data
-			text = env.fromElements(WordCountData.WORDS);
-		}
+        // get input data
+        // 获取输入数据
+        DataStream<String> text;
+        if (params.has("input")) {
+            // read the text file from given input path
+            text = env.readTextFile(params.get("input"));
+        } else {
+            System.out.println("Executing WordCount example with default input data set.");
+            System.out.println("Use --input to specify file input.");
+            // get default test text data
+            text = env.fromElements(WordCountData.WORDS);
+        }
 
-		DataStream<Tuple2<String, Integer>> counts =
-		// split up the lines in pairs (2-tuples) containing: (word,1)
-		text.flatMap(new Tokenizer())
-		// group by the tuple field "0" and sum up tuple field "1"
-				.keyBy(0).sum(1);
+        DataStream<Tuple2<String, Integer>> counts =
+                // split up the lines in pairs (2-tuples) containing: (word,1)
+                // 成对分割线
+                text.flatMap(new Tokenizer())
+                        // group by the tuple field "0" and sum up tuple field "1"
+                        // 由元组字段“0”组合，并将元组字段“1”
+                        .keyBy(0).sum(1);
 
-		// emit result
-		if (params.has("output")) {
-			counts.writeAsText(params.get("output"));
-		} else {
-			System.out.println("Printing result to stdout. Use --output to specify output path.");
-			counts.print();
-		}
+        // emit result
+        // 发出结果
+        if (params.has("output")) {
+            counts.writeAsText(params.get("output"));
+        } else {
+            System.out.println("Printing result to stdout. Use --output to specify output path.");
+            counts.print();
+        }
 
-		// execute program
-		env.execute("Streaming WordCount");
-	}
+        // execute program
+        // 执行程序 Desired name of the job
+        env.execute("Streaming WordCount");
+    }
 
-	// *************************************************************************
-	// USER FUNCTIONS
-	// *************************************************************************
+    // *************************************************************************
+    // USER FUNCTIONS
+    // *************************************************************************
 
-	/**
-	 * Implements the string tokenizer that splits sentences into words as a
-	 * user-defined FlatMapFunction. The function takes a line (String) and
-	 * splits it into multiple pairs in the form of "(word,1)" ({@code Tuple2<String,
-	 * Integer>}).
-	 */
-	public static final class Tokenizer implements FlatMapFunction<String, Tuple2<String, Integer>> {
-		private static final long serialVersionUID = 1L;
+    /**
+     * Implements the string tokenizer that splits sentences into words as a
+     * user-defined FlatMapFunction. The function takes a line (String) and
+     * splits it into multiple pairs in the form of "(word,1)" ({@code Tuple2<String,
+     * Integer>}).
+     *
+     * 实现将句子分割成单词的字符串标记器
+     */
+    public static final class Tokenizer implements FlatMapFunction<String, Tuple2<String, Integer>> {
+        private static final long serialVersionUID = 1L;
 
-		@Override
-		public void flatMap(String value, Collector<Tuple2<String, Integer>> out)
-				throws Exception {
-			// normalize and split the line
-			String[] tokens = value.toLowerCase().split("\\W+");
+        @Override
+        public void flatMap(String value, Collector<Tuple2<String, Integer>> out)
+                throws Exception {
+            // normalize and split the line
+            // 规范化和分割线
+            String[] tokens = value.toLowerCase().split("\\W+");
 
-			// emit the pairs
-			for (String token : tokens) {
-				if (token.length() > 0) {
-					out.collect(new Tuple2<String, Integer>(token, 1));
-				}
-			}
-		}
-	}
+            // emit the pairs
+            // 发射对
+            for (String token : tokens) {
+                if (token.length() > 0) {
+                    out.collect(new Tuple2<String, Integer>(token, 1));
+                }
+            }
+        }
+    }
 
 }
